@@ -221,6 +221,7 @@ async def get_resume_variant(
 @router.get("/{application_id}/download-pdf")
 async def download_resume_pdf(
     application_id: uuid.UUID,
+    preview: bool = Query(False),
     current_user: User = Depends(get_current_user_from_token_param),
     db: AsyncSession = Depends(get_db),
 ):
@@ -241,6 +242,16 @@ async def download_resume_pdf(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Compiled PDF not available",
+        )
+
+    if preview:
+        with open(variant.compiled_pdf_path, "rb") as f:
+            content = f.read()
+        from fastapi.responses import Response
+        return Response(
+            content=content,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "inline"},
         )
 
     return FileResponse(

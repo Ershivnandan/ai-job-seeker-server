@@ -1,8 +1,8 @@
 import os
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -92,6 +92,7 @@ async def get_resume(
 @router.get("/{resume_id}/download")
 async def download_resume(
     resume_id: uuid.UUID,
+    preview: bool = Query(False),
     current_user: User = Depends(get_current_user_from_token_param),
     db: AsyncSession = Depends(get_db),
 ):
@@ -104,6 +105,15 @@ async def download_resume(
 
     if not os.path.exists(resume.file_path):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on disk")
+
+    if preview:
+        with open(resume.file_path, "rb") as f:
+            content = f.read()
+        return Response(
+            content=content,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "inline"},
+        )
 
     return FileResponse(
         path=resume.file_path,

@@ -21,6 +21,8 @@ class SkillUpdate(BaseModel):
 
 class SkillResponse(BaseModel):
     id: uuid.UUID
+    user_id: uuid.UUID
+    resume_id: Optional[uuid.UUID] = None
     name: str
     category: Optional[str] = None
     proficiency: Optional[str] = None
