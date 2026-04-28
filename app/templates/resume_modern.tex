@@ -9,7 +9,6 @@
 \usepackage{hyperref}
 \usepackage{xcolor}
 \usepackage{multicol}
-\usepackage{fontawesome5}
 \usepackage{tabularx}
 \usepackage{tikz}
 
@@ -46,28 +45,28 @@
 \begin{center}
     {\Huge\bfseries\color{primary} \VAR{name}} \\[8pt]
     \color{lighttext}
-    \BLOCK{if phone}\faPhone\ \VAR{phone}\BLOCK{endif}%
-    \BLOCK{if phone and email} \quad \BLOCK{endif}%
-    \BLOCK{if email}\faEnvelope\ \href{mailto:\VAR{email}}{\VAR{email}}\BLOCK{endif}%
-    \BLOCK{if location} \quad \faMapMarker*\ \VAR{location}\BLOCK{endif} \\[3pt]
-    \BLOCK{if linkedin}\faLinkedin\ \href{\VAR{linkedin}}{LinkedIn}\BLOCK{endif}%
-    \BLOCK{if linkedin and github} \quad \BLOCK{endif}%
-    \BLOCK{if github}\faGithub\ \href{\VAR{github}}{GitHub}\BLOCK{endif}%
-    \BLOCK{if portfolio and (linkedin or github)} \quad \BLOCK{endif}%
-    \BLOCK{if portfolio}\faGlobe\ \href{\VAR{portfolio}}{Portfolio}\BLOCK{endif}
+    \BLOCK{if phone}\VAR{phone}\BLOCK{endif}%
+    \BLOCK{if phone and email} \quad $\vert$ \quad \BLOCK{endif}%
+    \BLOCK{if email}\href{mailto:\VAR{email}}{\VAR{email}}\BLOCK{endif}%
+    \BLOCK{if location} \quad $\vert$ \quad \VAR{location}\BLOCK{endif} \\[3pt]
+    \BLOCK{if linkedin}\href{\VAR{linkedin}}{LinkedIn}\BLOCK{endif}%
+    \BLOCK{if linkedin and github} \quad $\vert$ \quad \BLOCK{endif}%
+    \BLOCK{if github}\href{\VAR{github}}{GitHub}\BLOCK{endif}%
+    \BLOCK{if portfolio and (linkedin or github)} \quad $\vert$ \quad \BLOCK{endif}%
+    \BLOCK{if portfolio}\href{\VAR{portfolio}}{Portfolio}\BLOCK{endif}
 \end{center}
 
 \vspace{-4pt}
 
 % ===== SUMMARY =====
 \BLOCK{if summary}
-\section{\faUser\ Summary}
+\section{Summary}
 \VAR{summary}
 \BLOCK{endif}
 
 % ===== SKILLS =====
 \BLOCK{if skills_primary or skills_secondary}
-\section{\faCode\ Skills}
+\section{Skills}
 \BLOCK{if skills_primary}
 \textbf{\color{primary}Core Technologies:} \VAR{skills_primary | join(' $\cdot$ ')}
 \BLOCK{endif}
@@ -79,7 +78,7 @@
 
 % ===== EXPERIENCE =====
 \BLOCK{if experience}
-\section{\faBriefcase\ Experience}
+\section{Experience}
 \BLOCK{for exp in experience}
 \noindent
 \begin{tabularx}{\textwidth}{X r}
@@ -98,7 +97,7 @@
 
 % ===== PROJECTS =====
 \BLOCK{if projects}
-\section{\faRocket\ Projects}
+\section{Projects}
 \BLOCK{for project in projects}
 \noindent\textbf{\color{primary}\VAR{project.name}}\BLOCK{if project.technologies} \hfill {\small\color{lighttext}\VAR{project.technologies | join(' $\cdot$ ')}}\BLOCK{endif} \\
 \VAR{project.description}
@@ -108,7 +107,7 @@
 
 % ===== EDUCATION =====
 \BLOCK{if education}
-\section{\faGraduationCap\ Education}
+\section{Education}
 \BLOCK{for edu in education}
 \noindent
 \begin{tabularx}{\textwidth}{X r}
@@ -129,7 +128,7 @@
 
 % ===== CERTIFICATIONS =====
 \BLOCK{if certifications}
-\section{\faCertificate\ Certifications}
+\section{Certifications}
 \begin{itemize}
 \BLOCK{for cert in certifications}
     \item \VAR{cert}
