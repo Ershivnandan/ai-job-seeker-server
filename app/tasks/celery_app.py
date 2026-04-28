@@ -31,4 +31,5 @@ celery_app.conf.imports = [
     "app.tasks.resume_tasks",
     "app.tasks.job_tasks",
     "app.tasks.tailoring_tasks",
+    "app.tasks.application_tasks",
 ]
