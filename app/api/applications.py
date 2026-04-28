@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_user_from_token_param
 from app.models.user import User
 from app.models.job import Job
 from app.models.job_application import JobApplication
@@ -221,7 +221,7 @@ async def get_resume_variant(
 @router.get("/{application_id}/download-pdf")
 async def download_resume_pdf(
     application_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_from_token_param),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -253,7 +253,7 @@ async def download_resume_pdf(
 @router.get("/{application_id}/download-tex")
 async def download_resume_tex(
     application_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_from_token_param),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

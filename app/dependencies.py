@@ -1,4 +1,6 @@
-from fastapi import Depends, HTTPException, status
+from typing import Optional
+
+from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,10 +13,7 @@ from app.models.user import User
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db),
-) -> User:
+async def _resolve_user(token: str, db: AsyncSession) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -41,3 +40,23 @@ async def get_current_user(
             detail="User account is inactive",
         )
     return user
+
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    return await _resolve_user(token, db)
+
+
+async def get_current_user_from_token_param(
+    token: Optional[str] = Query(None, alias="token"),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Auth via query parameter — used for iframe/download URLs that can't set headers."""
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token query parameter required",
+        )
+    return await _resolve_user(token, db)
