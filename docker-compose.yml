@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jobseeker-postgres
+    environment:
+      POSTGRES_DB: jobseeker
+      POSTGRES_USER: jobseeker
+      POSTGRES_PASSWORD: jobseeker_secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobseeker"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: jobseeker-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: jobseeker-backend
+    ports:
+      - "8001:8000"
+    volumes:
+      - .:/app
+      - ./storage:/app/storage
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: jobseeker-celery-worker
+    volumes:
+      - .:/app
+      - ./storage:/app/storage
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.tasks.celery_app worker -l info -Q default,parsing,ai -c 4
+
+  celery-scraper:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: jobseeker-celery-scraper
+    volumes:
+      - .:/app
+      - ./storage:/app/storage
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.tasks.celery_app worker -l info -Q scraping,applying -c 2
+
+volumes:
+  postgres_data:

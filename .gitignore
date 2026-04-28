@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Environment variables
+.env
+
+# Storage (user uploads, generated files)
+storage/resumes/*
+storage/generated/*
+storage/cookies/*
+storage/screenshots/*
+!storage/resumes/.gitkeep
+!storage/generated/.gitkeep
+!storage/cookies/.gitkeep
+!storage/screenshots/.gitkeep
+
+# Database
+*.db
+*.sqlite3
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Docker
+docker-compose.override.yml
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
