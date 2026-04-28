@@ -8,9 +8,13 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.job import Job
-from app.schemas.job import JobResponse, JobSearchParams, JobSearchStatusResponse
+from app.models.job_platform import JobPlatform
+from app.schemas.job import JobResponse, JobSearchParams, JobSearchStatusResponse, JobMatchResponse
+from app.tasks.job_tasks import search_jobs as search_jobs_task
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
+
+DEFAULT_PLATFORMS = ["linkedin", "indeed", "naukri"]
 
 
 @router.post("/search", response_model=JobSearchStatusResponse)
@@ -19,14 +23,62 @@ async def search_jobs(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # TODO: Trigger Celery task for job scraping (Phase 3)
-    task_id = "placeholder-task-id"
+    platforms = params.platforms or DEFAULT_PLATFORMS
+
+    platform_result = await db.execute(
+        select(JobPlatform.name).where(JobPlatform.is_active == True)
+    )
+    active_platforms = [p for p in platform_result.scalars().all()]
+    valid_platforms = [p for p in platforms if p in active_platforms]
+
+    if not valid_platforms:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No valid active platforms. Available: {active_platforms}",
+        )
+
+    task = search_jobs_task.delay(
+        user_id=str(current_user.id),
+        keywords=params.query,
+        location=params.location,
+        platforms=valid_platforms,
+        max_results=25,
+    )
 
     return JobSearchStatusResponse(
-        task_id=task_id,
+        task_id=task.id,
         status="queued",
         jobs_found=0,
     )
+
+
+@router.get("/search/status/{task_id}", response_model=JobSearchStatusResponse)
+async def get_search_status(
+    task_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    from app.tasks.celery_app import celery_app
+    result = celery_app.AsyncResult(task_id)
+
+    if result.ready():
+        info = result.result or {}
+        return JobSearchStatusResponse(
+            task_id=task_id,
+            status="completed",
+            jobs_found=info.get("jobs_found", 0) if isinstance(info, dict) else 0,
+        )
+    elif result.failed():
+        return JobSearchStatusResponse(
+            task_id=task_id,
+            status="failed",
+            jobs_found=0,
+        )
+    else:
+        return JobSearchStatusResponse(
+            task_id=task_id,
+            status="processing",
+            jobs_found=0,
+        )
 
 
 @router.get("/", response_model=list[JobResponse])

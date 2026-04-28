@@ -1,6 +1,8 @@
+import os
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -16,6 +18,7 @@ from app.schemas.application import (
     ApplicationResponse,
     ResumeVariantResponse,
 )
+from app.tasks.tailoring_tasks import tailor_application, batch_tailor
 
 router = APIRouter(prefix="/applications", tags=["Applications"])
 
@@ -52,7 +55,7 @@ async def create_application(
     await db.commit()
     await db.refresh(application)
 
-    # TODO: Trigger tailoring pipeline (Phase 4)
+    tailor_application.delay(str(application.id))
 
     return application
 
@@ -90,6 +93,9 @@ async def batch_create_applications(
     await db.commit()
     for app in applications:
         await db.refresh(app)
+
+    if applications:
+        batch_tailor.delay([str(a.id) for a in applications])
 
     return applications
 
@@ -211,3 +217,94 @@ async def get_resume_variant(
             detail="Resume variant not found for this application",
         )
     return variant
+
+
+@router.get("/{application_id}/download-pdf")
+async def download_resume_pdf(
+    application_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ResumeVariant).where(
+            ResumeVariant.application_id == application_id,
+            ResumeVariant.user_id == current_user.id,
+        )
+    )
+    variant = result.scalar_one_or_none()
+    if not variant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume variant not found for this application",
+        )
+
+    if not variant.compiled_pdf_path or not os.path.exists(variant.compiled_pdf_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Compiled PDF not available",
+        )
+
+    return FileResponse(
+        path=variant.compiled_pdf_path,
+        media_type="application/pdf",
+        filename=f"tailored_resume_{application_id}.pdf",
+    )
+
+
+@router.get("/{application_id}/download-tex")
+async def download_resume_tex(
+    application_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ResumeVariant).where(
+            ResumeVariant.application_id == application_id,
+            ResumeVariant.user_id == current_user.id,
+        )
+    )
+    variant = result.scalar_one_or_none()
+    if not variant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume variant not found for this application",
+        )
+
+    from fastapi.responses import Response
+    return Response(
+        content=variant.latex_source,
+        media_type="application/x-tex",
+        headers={"Content-Disposition": f"attachment; filename=tailored_resume_{application_id}.tex"},
+    )
+
+
+@router.post("/{application_id}/retailor", response_model=ApplicationResponse)
+async def retailor_application(
+    application_id: uuid.UUID,
+    template: str = Query("resume_classic", regex="^resume_(classic|modern|minimal)$"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(JobApplication).where(
+            JobApplication.id == application_id,
+            JobApplication.user_id == current_user.id,
+        )
+    )
+    application = result.scalar_one_or_none()
+    if not application:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+    if application.status in ("applying", "applied"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot retailor application in '{application.status}' status",
+        )
+
+    application.status = "pending"
+    await db.commit()
+    await db.refresh(application)
+
+    tailor_application.delay(str(application.id), template)
+
+    return application

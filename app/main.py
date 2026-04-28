@@ -10,10 +10,31 @@ from app.database import engine, Base
 from app.models import *  # noqa: F401, F403
 
 
+async def seed_platforms(db):
+    from sqlalchemy import select
+    from app.models.job_platform import JobPlatform
+
+    platforms = [
+        {"name": "linkedin", "base_url": "https://www.linkedin.com"},
+        {"name": "indeed", "base_url": "https://www.indeed.com"},
+        {"name": "naukri", "base_url": "https://www.naukri.com"},
+    ]
+    for p in platforms:
+        result = await db.execute(select(JobPlatform).where(JobPlatform.name == p["name"]))
+        if not result.scalar_one_or_none():
+            db.add(JobPlatform(**p))
+    await db.commit()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        await seed_platforms(db)
+
     yield
 
 

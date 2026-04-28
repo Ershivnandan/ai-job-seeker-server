@@ -1,0 +1,140 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=0.6in]{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{multicol}
+\usepackage{fontawesome5}
+\usepackage{tabularx}
+\usepackage{tikz}
+
+% Colors
+\definecolor{primary}{RGB}{34,87,122}
+\definecolor{secondary}{RGB}{56,163,165}
+\definecolor{accent}{RGB}{87,204,153}
+\definecolor{darktext}{RGB}{51,51,51}
+\definecolor{lighttext}{RGB}{102,102,102}
+\definecolor{linkcolor}{RGB}{34,87,122}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=linkcolor,
+    urlcolor=linkcolor,
+    pdftitle={Resume},
+    pdfauthor={\VAR{name}},
+}
+
+% Section formatting with colored accent
+\titleformat{\section}
+    {\large\bfseries\color{primary}}
+    {}{0em}{}[{\color{secondary}\titlerule[1pt]}]
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+\pagestyle{empty}
+\setlist[itemize]{leftmargin=1.5em,itemsep=1pt,parsep=0pt,topsep=2pt}
+\color{darktext}
+
+\begin{document}
+
+% ===== HEADER =====
+\begin{center}
+    {\Huge\bfseries\color{primary} \VAR{name}} \\[8pt]
+    \color{lighttext}
+    \BLOCK{if phone}\faPhone\ \VAR{phone}\BLOCK{endif}%
+    \BLOCK{if phone and email} \quad \BLOCK{endif}%
+    \BLOCK{if email}\faEnvelope\ \href{mailto:\VAR{email}}{\VAR{email}}\BLOCK{endif}%
+    \BLOCK{if location} \quad \faMapMarker*\ \VAR{location}\BLOCK{endif} \\[3pt]
+    \BLOCK{if linkedin}\faLinkedin\ \href{\VAR{linkedin}}{LinkedIn}\BLOCK{endif}%
+    \BLOCK{if linkedin and github} \quad \BLOCK{endif}%
+    \BLOCK{if github}\faGithub\ \href{\VAR{github}}{GitHub}\BLOCK{endif}%
+    \BLOCK{if portfolio and (linkedin or github)} \quad \BLOCK{endif}%
+    \BLOCK{if portfolio}\faGlobe\ \href{\VAR{portfolio}}{Portfolio}\BLOCK{endif}
+\end{center}
+
+\vspace{-4pt}
+
+% ===== SUMMARY =====
+\BLOCK{if summary}
+\section{\faUser\ Summary}
+\VAR{summary}
+\BLOCK{endif}
+
+% ===== SKILLS =====
+\BLOCK{if skills_primary or skills_secondary}
+\section{\faCode\ Skills}
+\BLOCK{if skills_primary}
+\textbf{\color{primary}Core Technologies:} \VAR{skills_primary | join(' $\cdot$ ')}
+\BLOCK{endif}
+\BLOCK{if skills_secondary}
+\\[3pt]
+\textbf{\color{primary}Also Proficient In:} \VAR{skills_secondary | join(' $\cdot$ ')}
+\BLOCK{endif}
+\BLOCK{endif}
+
+% ===== EXPERIENCE =====
+\BLOCK{if experience}
+\section{\faBriefcase\ Experience}
+\BLOCK{for exp in experience}
+\noindent
+\begin{tabularx}{\textwidth}{X r}
+    \textbf{\large\color{primary}\VAR{exp.title}} & \textit{\VAR{exp.start_date} -- \VAR{exp.end_date}} \\
+    \textit{\color{secondary}\VAR{exp.company}}\BLOCK{if exp.location} & \VAR{exp.location}\BLOCK{endif} \\
+\end{tabularx}
+\vspace{-4pt}
+\begin{itemize}
+\BLOCK{for bullet in exp.bullets}
+    \item \VAR{bullet}
+\BLOCK{endfor}
+\end{itemize}
+\BLOCK{if not loop.last}\vspace{2pt}\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+% ===== PROJECTS =====
+\BLOCK{if projects}
+\section{\faRocket\ Projects}
+\BLOCK{for project in projects}
+\noindent\textbf{\color{primary}\VAR{project.name}}\BLOCK{if project.technologies} \hfill {\small\color{lighttext}\VAR{project.technologies | join(' $\cdot$ ')}}\BLOCK{endif} \\
+\VAR{project.description}
+\BLOCK{if not loop.last}\vspace{4pt}\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+% ===== EDUCATION =====
+\BLOCK{if education}
+\section{\faGraduationCap\ Education}
+\BLOCK{for edu in education}
+\noindent
+\begin{tabularx}{\textwidth}{X r}
+    \textbf{\color{primary}\VAR{edu.degree}}\BLOCK{if edu.field} \textit{in \VAR{edu.field}}\BLOCK{endif} & \VAR{edu.graduation_date} \\
+    \textit{\color{secondary}\VAR{edu.institution}} & \BLOCK{if edu.gpa}GPA: \VAR{edu.gpa}\BLOCK{endif} \\
+\end{tabularx}
+\BLOCK{if edu.highlights}
+\vspace{-4pt}
+\begin{itemize}
+\BLOCK{for h in edu.highlights}
+    \item \VAR{h}
+\BLOCK{endfor}
+\end{itemize}
+\BLOCK{endif}
+\BLOCK{if not loop.last}\vspace{2pt}\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+% ===== CERTIFICATIONS =====
+\BLOCK{if certifications}
+\section{\faCertificate\ Certifications}
+\begin{itemize}
+\BLOCK{for cert in certifications}
+    \item \VAR{cert}
+\BLOCK{endfor}
+\end{itemize}
+\BLOCK{endif}
+
+\end{document}

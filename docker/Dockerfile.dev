@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     texlive-latex-recommended \
     texlive-fonts-recommended \
+    texlive-fonts-extra \
     texlive-latex-extra \
     latexmk \
     # Playwright browser dependencies

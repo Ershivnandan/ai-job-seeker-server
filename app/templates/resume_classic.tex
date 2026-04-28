@@ -1,0 +1,124 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{tabularx}
+
+% Colors
+\definecolor{primary}{RGB}{0,51,102}
+\definecolor{linkcolor}{RGB}{0,102,204}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=linkcolor,
+    urlcolor=linkcolor,
+    pdftitle={Resume},
+    pdfauthor={\VAR{name}},
+}
+
+% Section formatting
+\titleformat{\section}
+    {\large\bfseries\color{primary}}
+    {}{0em}{}[\titlerule]
+\titlespacing*{\section}{0pt}{10pt}{6pt}
+
+% Remove page numbers
+\pagestyle{empty}
+
+% List formatting
+\setlist[itemize]{leftmargin=1.5em,itemsep=1pt,parsep=0pt,topsep=2pt}
+
+\begin{document}
+
+% ===== HEADER =====
+\begin{center}
+    {\LARGE\bfseries\color{primary} \VAR{name}} \\[4pt]
+    \BLOCK{if phone}\VAR{phone}\BLOCK{endif}%
+    \BLOCK{if phone and email} $\vert$ \BLOCK{endif}%
+    \BLOCK{if email}\href{mailto:\VAR{email}}{\VAR{email}}\BLOCK{endif}%
+    \BLOCK{if location} $\vert$ \VAR{location}\BLOCK{endif} \\[2pt]
+    \BLOCK{if linkedin}\href{\VAR{linkedin}}{LinkedIn}\BLOCK{endif}%
+    \BLOCK{if linkedin and github} $\vert$ \BLOCK{endif}%
+    \BLOCK{if github}\href{\VAR{github}}{GitHub}\BLOCK{endif}%
+    \BLOCK{if portfolio and (linkedin or github)} $\vert$ \BLOCK{endif}%
+    \BLOCK{if portfolio}\href{\VAR{portfolio}}{Portfolio}\BLOCK{endif}
+\end{center}
+
+% ===== SUMMARY =====
+\BLOCK{if summary}
+\section{Professional Summary}
+\VAR{summary}
+\BLOCK{endif}
+
+% ===== SKILLS =====
+\BLOCK{if skills_primary or skills_secondary}
+\section{Technical Skills}
+\BLOCK{if skills_primary}
+\textbf{Core:} \VAR{skills_primary | join(', ')}
+\BLOCK{endif}
+\BLOCK{if skills_secondary}
+\\[2pt]
+\textbf{Additional:} \VAR{skills_secondary | join(', ')}
+\BLOCK{endif}
+\BLOCK{endif}
+
+% ===== EXPERIENCE =====
+\BLOCK{if experience}
+\section{Professional Experience}
+\BLOCK{for exp in experience}
+\noindent\textbf{\VAR{exp.title}} \hfill \VAR{exp.start_date} -- \VAR{exp.end_date} \\
+\textit{\VAR{exp.company}}\BLOCK{if exp.location} \hfill \VAR{exp.location}\BLOCK{endif}
+\begin{itemize}
+\BLOCK{for bullet in exp.bullets}
+    \item \VAR{bullet}
+\BLOCK{endfor}
+\end{itemize}
+\BLOCK{if not loop.last}\vspace{4pt}\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+% ===== PROJECTS =====
+\BLOCK{if projects}
+\section{Projects}
+\BLOCK{for project in projects}
+\noindent\textbf{\VAR{project.name}}\BLOCK{if project.technologies} \hfill \textit{\VAR{project.technologies | join(', ')}}\BLOCK{endif} \\
+\VAR{project.description}
+\BLOCK{if not loop.last}\vspace{4pt}\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+% ===== EDUCATION =====
+\BLOCK{if education}
+\section{Education}
+\BLOCK{for edu in education}
+\noindent\textbf{\VAR{edu.degree}}\BLOCK{if edu.field} in \VAR{edu.field}\BLOCK{endif} \hfill \VAR{edu.graduation_date} \\
+\textit{\VAR{edu.institution}}\BLOCK{if edu.gpa} \hfill GPA: \VAR{edu.gpa}\BLOCK{endif}
+\BLOCK{if edu.highlights}
+\begin{itemize}
+\BLOCK{for h in edu.highlights}
+    \item \VAR{h}
+\BLOCK{endfor}
+\end{itemize}
+\BLOCK{endif}
+\BLOCK{if not loop.last}\vspace{4pt}\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+% ===== CERTIFICATIONS =====
+\BLOCK{if certifications}
+\section{Certifications}
+\begin{itemize}
+\BLOCK{for cert in certifications}
+    \item \VAR{cert}
+\BLOCK{endfor}
+\end{itemize}
+\BLOCK{endif}
+
+\end{document}

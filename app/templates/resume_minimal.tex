@@ -1,0 +1,128 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+% Colors — intentionally muted
+\definecolor{heading}{RGB}{40,40,40}
+\definecolor{accent}{RGB}{120,120,120}
+\definecolor{linkcolor}{RGB}{70,70,70}
+
+% Hyperref
+\hypersetup{
+    colorlinks=true,
+    linkcolor=linkcolor,
+    urlcolor=linkcolor,
+    pdftitle={Resume},
+    pdfauthor={\VAR{name}},
+}
+
+% Clean section style
+\titleformat{\section}
+    {\normalsize\bfseries\uppercase\color{heading}}
+    {}{0em}{}[\vspace{-4pt}\rule{\textwidth}{0.4pt}]
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+
+\pagestyle{empty}
+\setlist[itemize]{leftmargin=1.2em,itemsep=1pt,parsep=0pt,topsep=2pt,label={\color{accent}\textbullet}}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+% ===== HEADER =====
+\begin{center}
+    {\Large\bfseries \VAR{name}} \\[6pt]
+    {\small\color{accent}%
+    \BLOCK{if email}\VAR{email}\BLOCK{endif}%
+    \BLOCK{if email and phone} \enspace|\enspace \BLOCK{endif}%
+    \BLOCK{if phone}\VAR{phone}\BLOCK{endif}%
+    \BLOCK{if location and (email or phone)} \enspace|\enspace \BLOCK{endif}%
+    \BLOCK{if location}\VAR{location}\BLOCK{endif}}
+    \\[2pt]
+    {\small\color{accent}%
+    \BLOCK{if linkedin}\href{\VAR{linkedin}}{LinkedIn}\BLOCK{endif}%
+    \BLOCK{if linkedin and github} \enspace|\enspace \BLOCK{endif}%
+    \BLOCK{if github}\href{\VAR{github}}{GitHub}\BLOCK{endif}%
+    \BLOCK{if portfolio and (linkedin or github)} \enspace|\enspace \BLOCK{endif}%
+    \BLOCK{if portfolio}\href{\VAR{portfolio}}{Portfolio}\BLOCK{endif}}
+\end{center}
+
+\vspace{2pt}
+
+% ===== SUMMARY =====
+\BLOCK{if summary}
+\section{Summary}
+\VAR{summary}
+\BLOCK{endif}
+
+% ===== SKILLS =====
+\BLOCK{if skills_primary or skills_secondary}
+\section{Skills}
+\BLOCK{if skills_primary}
+\VAR{skills_primary | join(', ')}%
+\BLOCK{endif}
+\BLOCK{if skills_secondary}
+\BLOCK{if skills_primary}, \BLOCK{endif}%
+\VAR{skills_secondary | join(', ')}%
+\BLOCK{endif}
+\BLOCK{endif}
+
+% ===== EXPERIENCE =====
+\BLOCK{if experience}
+\section{Experience}
+\BLOCK{for exp in experience}
+\textbf{\VAR{exp.title}} \hfill \VAR{exp.start_date} -- \VAR{exp.end_date} \\
+{\color{accent}\VAR{exp.company}}\BLOCK{if exp.location} \hfill \VAR{exp.location}\BLOCK{endif}
+\begin{itemize}
+\BLOCK{for bullet in exp.bullets}
+    \item \VAR{bullet}
+\BLOCK{endfor}
+\end{itemize}
+\BLOCK{if not loop.last}\vspace{3pt}\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+% ===== PROJECTS =====
+\BLOCK{if projects}
+\section{Projects}
+\BLOCK{for project in projects}
+\textbf{\VAR{project.name}}\BLOCK{if project.technologies} \hfill {\small\color{accent}\VAR{project.technologies | join(', ')}}\BLOCK{endif} \\
+\VAR{project.description}
+\BLOCK{if not loop.last}\vspace{3pt}\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+% ===== EDUCATION =====
+\BLOCK{if education}
+\section{Education}
+\BLOCK{for edu in education}
+\textbf{\VAR{edu.degree}}\BLOCK{if edu.field} in \VAR{edu.field}\BLOCK{endif} \hfill \VAR{edu.graduation_date} \\
+{\color{accent}\VAR{edu.institution}}\BLOCK{if edu.gpa} \hfill GPA: \VAR{edu.gpa}\BLOCK{endif}
+\BLOCK{if edu.highlights}
+\begin{itemize}
+\BLOCK{for h in edu.highlights}
+    \item \VAR{h}
+\BLOCK{endfor}
+\end{itemize}
+\BLOCK{endif}
+\BLOCK{if not loop.last}\vspace{3pt}\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+% ===== CERTIFICATIONS =====
+\BLOCK{if certifications}
+\section{Certifications}
+\begin{itemize}
+\BLOCK{for cert in certifications}
+    \item \VAR{cert}
+\BLOCK{endfor}
+\end{itemize}
+\BLOCK{endif}
+
+\end{document}
