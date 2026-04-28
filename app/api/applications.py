@@ -19,6 +19,7 @@ from app.schemas.application import (
     ResumeVariantResponse,
 )
 from app.tasks.tailoring_tasks import tailor_application, batch_tailor
+from app.tasks.application_tasks import apply_to_job, batch_apply
 
 router = APIRouter(prefix="/applications", tags=["Applications"])
 
@@ -162,8 +163,6 @@ async def approve_application(
     await db.commit()
     await db.refresh(application)
 
-    # TODO: Trigger auto-apply task (Phase 5)
-
     return application
 
 
@@ -193,7 +192,7 @@ async def trigger_apply(
     await db.commit()
     await db.refresh(application)
 
-    # TODO: Trigger Celery apply task (Phase 5)
+    apply_to_job.delay(str(application.id))
 
     return application
 
@@ -306,5 +305,69 @@ async def retailor_application(
     await db.refresh(application)
 
     tailor_application.delay(str(application.id), template)
+
+    return application
+
+
+@router.post("/batch-apply", response_model=dict)
+async def batch_apply_applications(
+    data: ApplicationBatchCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    valid_ids = []
+    for job_id in data.job_ids:
+        result = await db.execute(
+            select(JobApplication).where(
+                JobApplication.user_id == current_user.id,
+                JobApplication.job_id == job_id,
+                JobApplication.status == "approved",
+            )
+        )
+        app = result.scalar_one_or_none()
+        if app:
+            app.status = "applying"
+            valid_ids.append(str(app.id))
+
+    await db.commit()
+
+    if valid_ids:
+        batch_apply.delay(valid_ids)
+
+    return {
+        "queued": len(valid_ids),
+        "message": f"Queued {len(valid_ids)} applications for auto-apply",
+    }
+
+
+@router.post("/{application_id}/retry", response_model=ApplicationResponse)
+async def retry_application(
+    application_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(JobApplication).where(
+            JobApplication.id == application_id,
+            JobApplication.user_id == current_user.id,
+        )
+    )
+    application = result.scalar_one_or_none()
+    if not application:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+    if application.status != "failed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only failed applications can be retried",
+        )
+
+    application.status = "applying"
+    application.retry_count = 0
+    application.error_log = None
+    await db.commit()
+    await db.refresh(application)
+
+    apply_to_job.delay(str(application.id))
 
     return application
